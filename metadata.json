@@ -1,0 +1,5 @@
+{
+  "name": "TaxMate (텍스메이트)",
+  "description": "소상공인을 위한 초간편 세금계산서 준비 서비스. 사진을 찍으면 홈택스 입력용 데이터를 자동 정리해줍니다.",
+  "requestFramePermissions": []
+}
