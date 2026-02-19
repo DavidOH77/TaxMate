@@ -64,7 +64,7 @@ export const Home: React.FC<HomeProps> = ({ drafts, deleteDraft, onSave }) => {
   const openSelectionStep = (mode: 'all' | 'thisMonth' | 'lastMonth' | 'custom') => {
     const targetDrafts = getFilteredDrafts(mode);
     if (targetDrafts.length === 0) {
-      alert('해당 기간에 작성된 장부가 없습니다.');
+      alert('해당 기간에 작성된 내역이 없습니다.');
       return;
     }
     setCurrentFilterMode(mode);
@@ -97,17 +97,17 @@ export const Home: React.FC<HomeProps> = ({ drafts, deleteDraft, onSave }) => {
         {!hasDrafts ? (
           <section className="py-10 space-y-6">
             <div className="px-1 text-center mb-10">
-              <h1 className="text-3xl font-black text-gray-900 tracking-tighter mb-4 leading-tight">장부 새로 만들기</h1>
+              <h1 className="text-3xl font-black text-gray-900 tracking-tighter mb-4 leading-tight">세금계산서 장부 만들기</h1>
               <p className="text-gray-500 text-[15px] font-bold leading-relaxed italic">아직 등록된 내역이 없습니다.<br/>첫 번째 세금계산서 장부를 만들어보세요.</p>
             </div>
             <div className="grid grid-cols-1 gap-4">
               <button onClick={() => navigate('/upload')} className="flex items-center gap-6 bg-blue-600 p-8 rounded-[40px] text-white shadow-xl shadow-blue-600/20 active:scale-95 transition-all text-left group">
                 <div className="w-16 h-16 bg-white/20 rounded-3xl flex items-center justify-center shrink-0"><Scan size={32} /></div>
-                <div><span className="font-black text-[20px] block mb-1">종이 문서 AI 등록</span><span className="text-[12px] font-bold opacity-70">명세표를 사진 찍어 내용을 쏙!</span></div>
+                <div><span className="font-black text-[20px] block mb-1">종이 문서 AI 등록</span><span className="text-[12px] font-bold opacity-70">명세표를 찍으면 세금계산서로 변신!</span></div>
               </button>
               <button onClick={handleManualCreate} className="flex items-center gap-6 bg-white p-8 rounded-[40px] text-gray-900 border-2 border-gray-100 shadow-sm active:scale-95 transition-all text-left group">
                 <div className="w-16 h-16 bg-gray-50 rounded-3xl flex items-center justify-center shrink-0"><Edit3 size={32} className="text-gray-400" /></div>
-                <div><span className="font-black text-[20px] block mb-1">세금계산서 직접 발급</span><span className="text-[12px] font-bold text-gray-400">빈 양식에 내용을 직접 입력해요</span></div>
+                <div><span className="font-black text-[20px] block mb-1">직접 수기 작성</span><span className="text-[12px] font-bold text-gray-400">빈 양식에 내용을 직접 입력해요</span></div>
               </button>
             </div>
           </section>
@@ -119,7 +119,7 @@ export const Home: React.FC<HomeProps> = ({ drafts, deleteDraft, onSave }) => {
                 <div className="p-8 pb-6 relative z-10">
                   <div className="flex items-center gap-1.5 mb-3">
                     <Sparkles size={14} className="text-blue-500 fill-blue-500" />
-                    <span className="text-[13px] font-black text-blue-500 tracking-tight uppercase">총 합계 금액 (세액 포함)</span>
+                    <span className="text-[13px] font-black text-blue-500 tracking-tight uppercase">총 세금계산서 합계 (세액 포함)</span>
                   </div>
                   <div className="flex items-baseline gap-2">
                     <h2 className="text-4xl font-black text-gray-900 tracking-tighter">{formatCurrency(totalAmount)}</h2>
@@ -137,7 +137,7 @@ export const Home: React.FC<HomeProps> = ({ drafts, deleteDraft, onSave }) => {
 
             <section className="space-y-4">
               <div className="flex justify-between items-center px-1">
-                <h2 className="text-[17px] font-black text-gray-900">최근 작성 내역</h2>
+                <h2 className="text-[17px] font-black text-gray-900">최근 정리한 내역</h2>
                 <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">{drafts.length}건</span>
               </div>
               <div className="space-y-3">
@@ -241,7 +241,7 @@ export const Home: React.FC<HomeProps> = ({ drafts, deleteDraft, onSave }) => {
           <div className="w-full max-w-xl bg-white rounded-t-[40px] p-10 animate-in slide-in-from-bottom duration-300 shadow-2xl text-center">
             <div className="w-20 h-20 bg-red-50 text-red-500 rounded-[30px] flex items-center justify-center mx-auto mb-6"><AlertTriangle size={40} /></div>
             <h3 className="text-2xl font-black text-gray-900 mb-3">정말 삭제하시겠습니까?</h3>
-            <p className="text-[15px] font-bold text-gray-500 leading-relaxed mb-10 italic">이 장부 내역은 다시 복구할 수 없습니다.</p>
+            <p className="text-[15px] font-bold text-gray-500 leading-relaxed mb-10 italic">삭제된 세금계산서 내역은 복구할 수 없습니다.</p>
             <div className="flex gap-4">
               <button onClick={() => setDeleteTargetId(null)} className="flex-1 h-16 bg-gray-100 text-gray-500 rounded-2xl font-black text-[16px] active:scale-95 transition-all">취소</button>
               <button onClick={confirmDelete} className="flex-[1.5] h-16 bg-red-500 text-white rounded-2xl font-black text-[16px] active:scale-95 transition-all shadow-lg shadow-red-500/20">네, 삭제할게요</button>

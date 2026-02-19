@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom';
 import { Upload } from './pages/Upload';
 import { Editor } from './pages/Editor';
 import { Home } from './pages/Home';
@@ -105,16 +105,24 @@ const DraftLoader = ({ getDraft, saveDraft, deleteDraft, allDrafts, myInfo }: {
   myInfo: Party
 }) => {
   const { id } = useParams();
+  const location = useLocation();
   
+  // AI 업로드 후 전달받은 임시 데이터가 있는 경우
+  const tempDraft = location.state?.tempDraft;
+
   // 새 장부인 경우
   if (id === 'new') {
-    const newDraft = { ...EMPTY_DRAFT, id: crypto.randomUUID(), supplier: myInfo };
+    const newDraft = tempDraft || { ...EMPTY_DRAFT, id: crypto.randomUUID(), supplier: myInfo };
     return <Editor draft={newDraft} isNew={true} updateDraft={saveDraft} deleteDraft={deleteDraft} allDrafts={allDrafts} />;
   }
 
-  const draft = id ? getDraft(id) : null;
+  // AI 업로드는 항상 'new' 혹은 고유 ID로 오지만, 목록에 없는 경우 신규 취급
+  const existingDraft = id ? getDraft(id) : null;
+  const draft = existingDraft || tempDraft;
+
   if (!draft) return <Navigate to="/" replace />;
-  return <Editor draft={draft} isNew={false} updateDraft={saveDraft} deleteDraft={deleteDraft} allDrafts={allDrafts} />;
+  
+  return <Editor draft={draft} isNew={!existingDraft} updateDraft={saveDraft} deleteDraft={deleteDraft} allDrafts={allDrafts} />;
 };
 
 export default App;

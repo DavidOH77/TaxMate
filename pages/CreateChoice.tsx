@@ -31,7 +31,7 @@ export const CreateChoice: React.FC<CreateChoiceProps> = ({ onSave }) => {
             어떤 방법으로<br/>장부를 만드실까요?
           </h1>
           <p className="text-gray-500 text-[15px] font-bold leading-relaxed">
-            종이 문서가 있다면 AI 등록을,<br/>새로 작성하신다면 직접 발급을 선택하세요.
+            종이 문서가 있다면 AI 등록을,<br/>세금계산서를 새로 쓰신다면 수기 작성을 누르세요.
           </p>
         </div>
 
@@ -45,7 +45,7 @@ export const CreateChoice: React.FC<CreateChoiceProps> = ({ onSave }) => {
             </div>
             <div>
               <span className="font-black text-[20px] block mb-1 text-white">종이 문서 AI 등록</span>
-              <span className="text-[13px] font-bold text-white/70 block leading-tight">거래명세표나 영수증을 사진 찍어<br/>내용을 자동으로 가져옵니다.</span>
+              <span className="text-[13px] font-bold text-white/70 block leading-tight">거래명세표나 영수증을 사진 찍어<br/>세금계산서 내용으로 변환합니다.</span>
             </div>
           </button>
 
@@ -57,7 +57,7 @@ export const CreateChoice: React.FC<CreateChoiceProps> = ({ onSave }) => {
               <Edit3 size={32} className="text-gray-400" />
             </div>
             <div>
-              <span className="font-black text-[20px] block mb-1 text-gray-900">세금계산서 직접 발급</span>
+              <span className="font-black text-[20px] block mb-1 text-gray-900">세금계산서 수기 작성</span>
               <span className="text-[13px] font-bold text-gray-400 block leading-tight">아무것도 없는 상태에서<br/>빈 양식에 직접 내용을 입력합니다.</span>
             </div>
           </button>

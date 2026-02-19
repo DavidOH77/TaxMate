@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Heart, Quote } from 'lucide-react';
 import { Card } from './Card';

@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface LogoProps {
@@ -56,7 +57,7 @@ export const Logo: React.FC<LogoProps> = ({
       </div>
       {showTagline && (
         <p className="text-[10px] font-black text-gray-400 mt-1 tracking-tighter">
-          <span className="text-blue-600">세</span>금을 쉽게 <span className="text-blue-600">정</span>리하다
+          <span className="text-blue-600">세</span>금계산서를 쉽게 <span className="text-blue-600">정</span>리하다
         </p>
       )}
     </div>

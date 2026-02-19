@@ -48,8 +48,9 @@ export const Upload: React.FC<UploadProps> = ({ onSave, myInfo }) => {
       }
       
       const validated = validateDraft(draftData);
-      onSave(validated);
-      navigate(`/draft/${validated.id}`);
+      // NOTE: We don't call onSave(validated) here anymore to prevent auto-list-entry
+      // The Editor will handle final saving via onSave.
+      navigate(`/draft/${validated.id}`, { state: { tempDraft: validated } });
     } catch (error) {
       alert("문서를 분석하는 중 오류가 발생했습니다. 다시 시도해 주세요.");
     } finally {
@@ -72,8 +73,8 @@ export const Upload: React.FC<UploadProps> = ({ onSave, myInfo }) => {
               <Scan size={32} className="animate-bounce" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-gray-900 tracking-tight mb-2">세정 인공지능이<br/>내용을 읽고 있습니다</h1>
-              <p className="text-gray-400 text-sm font-bold">글자와 숫자를 데이터로 변환하는 중입니다.</p>
+              <h1 className="text-2xl font-black text-gray-900 tracking-tight mb-2">세정 인공지능이<br/>정보를 읽고 있습니다</h1>
+              <p className="text-gray-400 text-sm font-bold">세금계산서용 데이터를 정제하는 중입니다.</p>
             </div>
           </div>
         ) : (
@@ -82,7 +83,7 @@ export const Upload: React.FC<UploadProps> = ({ onSave, myInfo }) => {
               등록하실 종이 문서를<br/>찍어주세요.
             </h1>
             <p className="text-gray-500 text-[15px] font-bold mb-14 leading-relaxed">
-              거래명세표나 영수증 사진을 올리면,<br/>AI가 홈택스 입력용 데이터로 변환해 드립니다.
+              거래명세표나 영수증 사진을 올리면,<br/>AI가 세금계산서 장부로 자동 정리해 드립니다.
             </p>
             
             <label className="group relative block w-full aspect-square border-2 border-dashed border-gray-200 rounded-[40px] cursor-pointer hover:border-black hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-6 bg-gray-50/50 shadow-inner">
@@ -111,7 +112,7 @@ export const Upload: React.FC<UploadProps> = ({ onSave, myInfo }) => {
 
       <footer className="mt-auto pt-10 flex items-center justify-center gap-2 text-gray-400">
         <ShieldCheck size={16} className="text-blue-500" />
-        <span className="text-xs font-extrabold tracking-tighter">보안 기술로 사장님의 정보를 안전하게 지킵니다</span>
+        <span className="text-xs font-extrabold tracking-tighter">세금계산서 전문 AI가 안전하게 분석합니다</span>
       </footer>
     </div>
   );
