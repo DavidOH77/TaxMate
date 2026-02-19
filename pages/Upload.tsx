@@ -1,11 +1,9 @@
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload as UploadIcon, FileText, Zap, ShieldCheck, AlertCircle, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Plus, ShieldCheck, Camera, FileImage } from 'lucide-react';
 import { MOCK_DRAFT, EMPTY_DRAFT } from '../constants';
 import { processWithGemini } from '../services/geminiService';
 import { validateDraft } from '../utils/calculation';
-import { Button } from '../components/Button';
-import { Card } from '../components/Card';
 import { InvoiceDraft, Party } from '../types';
 
 interface UploadProps {
@@ -15,24 +13,16 @@ interface UploadProps {
 
 export const Upload: React.FC<UploadProps> = ({ onSave, myInfo }) => {
   const navigate = useNavigate();
-  const [isDragOver, setIsDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [useAI, setUseAI] = useState(true);
 
   const handleProcess = async (file: File) => {
     setLoading(true);
-    setErrorMsg(null);
     try {
+      const hasApiKey = !!process.env.API_KEY;
       let draftData: InvoiceDraft;
 
-      // Check if API Key exists in the environment
-      const hasApiKey = !!process.env.API_KEY;
-
-      if (useAI && hasApiKey) {
-        // Assert API key presence as it is checked by hasApiKey
+      if (hasApiKey) {
         const extracted = await processWithGemini(file, process.env.API_KEY!);
-        
         draftData = {
           ...EMPTY_DRAFT,
           ...extracted,
@@ -52,126 +42,76 @@ export const Upload: React.FC<UploadProps> = ({ onSave, myInfo }) => {
           })) as any
         };
       } else {
-        console.log("Using Mock Data (No API Key or AI Disabled)");
         await new Promise(resolve => setTimeout(resolve, 1500));
-        draftData = { 
-          ...MOCK_DRAFT, 
-          id: crypto.randomUUID(),
-          supplier: myInfo,
-          originalFileName: file.name 
-        };
+        draftData = { ...MOCK_DRAFT, id: crypto.randomUUID(), supplier: myInfo };
       }
       
       const validated = validateDraft(draftData);
-      onSave(validated); // Save to App state
-
-      // Check for missing critical fields to notify user
-      const missingFields = validated.warnings
-        .map(w => {
-          if (w.code === 'MISSING_BIZ_NO') return '사업자번호';
-          if (w.code === 'MISSING_BUYER_NAME') return '상호';
-          if (w.code === 'NO_ITEMS') return '품목';
-          if (w.code === 'TOTAL_MISMATCH') return '금액 합계';
-          return null;
-        })
-        .filter((v, i, a) => v && a.indexOf(v) === i); // Unique filter
-
-      navigate(`/draft/${validated.id}`, { state: { missingFields } });
-
-    } catch (error: any) {
-      console.error(error);
-      setErrorMsg(error.message || "문서 분석 중 오류가 발생했습니다.");
+      onSave(validated);
+      navigate(`/draft/${validated.id}`);
+    } catch (error) {
+      alert("문서를 분석하는 중 오류가 발생했습니다. 다시 시도해 주세요.");
     } finally {
       setLoading(false);
     }
   };
 
-  const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleProcess(e.dataTransfer.files[0]);
-    }
-  }, [useAI]);
-
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleProcess(e.target.files[0]);
-    }
-  };
-
   return (
-    <div className="max-w-md mx-auto h-full flex flex-col justify-center px-4 py-8">
-      <div className="mb-6">
-        <button onClick={() => navigate('/')} className="flex items-center text-gray-500 hover:text-gray-900">
-            <ArrowLeft size={20} className="mr-1" /> 목록으로
+    <div className="max-w-xl mx-auto h-screen flex flex-col px-6 py-10 bg-white">
+      <header className="mb-14">
+        <button onClick={() => navigate('/')} className="p-2 -ml-2 text-gray-400 hover:text-gray-900 transition-colors">
+          <ArrowLeft size={24} />
         </button>
-      </div>
+      </header>
 
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">세금계산서<br/>추가하기</h1>
-        <p className="text-gray-500">거래명세표, 영수증 사진을 올려주세요.</p>
-      </div>
-
-      <div className="mb-6 flex justify-center">
-        <button 
-          onClick={() => setUseAI(!useAI)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${useAI ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-500 ring-offset-2' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-        >
-          <Zap size={16} className={useAI ? 'fill-blue-700' : ''} />
-          {useAI ? 'AI 자동 분석 (ON)' : '체험 모드 (Mock)'}
-        </button>
-      </div>
-
-      {errorMsg && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-start gap-2 text-sm">
-          <AlertCircle size={18} className="shrink-0 mt-0.5" />
-          <span>{errorMsg}</span>
-        </div>
-      )}
-
-      <Card className={`
-        relative border-2 border-dashed transition-all duration-300 min-h-[300px] flex flex-col items-center justify-center gap-4 cursor-pointer
-        ${isDragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-400 hover:bg-gray-50'}
-      `}>
-        <input 
-          type="file" 
-          className="absolute inset-0 opacity-0 cursor-pointer" 
-          accept="image/*,.pdf,.xlsx,.csv"
-          onChange={onFileChange}
-          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-          onDragLeave={() => setIsDragOver(false)}
-          onDrop={onDrop}
-          disabled={loading}
-        />
-        
+      <div className="flex-1 flex flex-col items-center justify-center text-center">
         {loading ? (
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-lg font-bold text-gray-800">문서를 분석하고 있어요</p>
-            <p className="text-sm text-gray-500 mt-1">
-              {useAI ? '글자를 읽어내고 정리 중입니다...' : '잠시만 기다려주세요...'}
-            </p>
+          <div className="animate-pulse space-y-8">
+            <div className="w-20 h-20 bg-black rounded-[32px] mx-auto flex items-center justify-center text-white">
+              <Camera size={32} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black text-gray-900 tracking-tight mb-2">세정 인공지능이<br/>문서를 읽고 있습니다</h1>
+              <p className="text-gray-400 text-sm font-bold">세금계산서의 항목들을 꼼꼼하게 정리 중입니다.</p>
+            </div>
           </div>
         ) : (
-          <>
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-2 transition-colors ${useAI ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
-              <UploadIcon size={32} />
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-bold text-gray-800">
-                사진/파일 업로드
-              </p>
-              <p className="text-sm text-gray-500 mt-1">또는 여기로 드래그하세요</p>
-            </div>
-          </>
+          <div className="w-full max-w-sm">
+            <h1 className="text-3xl font-black text-gray-900 tracking-tighter mb-4 leading-tight">
+              세금계산서나 명세표를<br/>사진 찍거나 올려주세요.
+            </h1>
+            <p className="text-gray-500 text-[15px] font-bold mb-14 leading-relaxed">
+              수기 명세표라도 괜찮습니다.<br/>AI가 거래처와 품목을 자동 추출해 드릴게요.
+            </p>
+            
+            <label className="group relative block w-full aspect-square border-2 border-dashed border-gray-200 rounded-[40px] cursor-pointer hover:border-black hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-6 bg-gray-50/50 shadow-inner">
+              <input 
+                type="file" 
+                className="hidden" 
+                accept="image/*"
+                onChange={(e) => e.target.files?.[0] && handleProcess(e.target.files[0])} 
+              />
+              <div className="flex gap-3">
+                <div className="w-16 h-16 bg-black text-white rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-xl">
+                  <Camera size={28} />
+                </div>
+                <div className="w-16 h-16 bg-blue-500 text-white rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-xl">
+                  <FileImage size={28} />
+                </div>
+              </div>
+              <div className="text-center">
+                <span className="text-lg font-black text-gray-900 block">문서 촬영 및 파일 선택</span>
+                <span className="text-xs font-bold text-gray-400 mt-1 block">JPG, PNG 등 이미지 파일 지원</span>
+              </div>
+            </label>
+          </div>
         )}
-      </Card>
-      
-      <div className="mt-8 flex items-center justify-center gap-2 text-xs text-gray-400">
-        <ShieldCheck size={14} />
-        <span>개인정보는 안전하게 보호됩니다 (로컬 처리)</span>
       </div>
+
+      <footer className="mt-auto pt-10 flex items-center justify-center gap-2 text-gray-400">
+        <ShieldCheck size={16} className="text-blue-500" />
+        <span className="text-xs font-extrabold tracking-tighter">데이터는 암호화되어 안전하게 보호됩니다</span>
+      </footer>
     </div>
   );
 };

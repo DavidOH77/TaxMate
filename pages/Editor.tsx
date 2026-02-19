@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, AlertCircle, Save, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Plus, Trash2, ReceiptText } from 'lucide-react';
 import { InvoiceDraft, LineItem } from '../types';
 import { calculateTotals, formatCurrency, validateDraft } from '../utils/calculation';
 import { Button } from '../components/Button';
@@ -13,25 +13,7 @@ interface EditorProps {
 
 export const Editor: React.FC<EditorProps> = ({ draft, updateDraft }) => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [activeTab, setActiveTab] = useState<'info' | 'items'>('info');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Check for missing fields passed from Upload page
-    const state = location.state as { missingFields?: string[] };
-    if (state?.missingFields && state.missingFields.length > 0) {
-      setToastMessage(`${state.missingFields.join(', ')} 정보가 누락되었습니다.`);
-      
-      // Auto dismiss after 4 seconds
-      const timer = setTimeout(() => setToastMessage(null), 4000);
-      
-      // Clear state so it doesn't reappear on refresh (though standard browser refresh clears state usually)
-      window.history.replaceState({}, document.title);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [location]);
 
   if (!draft) return null;
 
@@ -44,7 +26,6 @@ export const Editor: React.FC<EditorProps> = ({ draft, updateDraft }) => {
     const updatedItems = draft.items.map(item => {
       if (item.id === itemId) {
         const newItem = { ...item, [field]: value };
-        // Auto calc logic
         if (field === 'qty' || field === 'unitPrice') {
           newItem.supplyAmount = (newItem.qty || 0) * (newItem.unitPrice || 0);
           newItem.vatAmount = Math.floor(newItem.supplyAmount * 0.1);
@@ -54,242 +35,148 @@ export const Editor: React.FC<EditorProps> = ({ draft, updateDraft }) => {
       return item;
     });
     
-    // Recalculate totals
-    const { totalSupplyAmount, totalVatAmount, totalAmount } = calculateTotals(updatedItems);
-    
-    const updatedDraft = { 
-      ...draft, 
-      items: updatedItems,
-      totalSupplyAmount,
-      totalVatAmount,
-      totalAmount
-    };
-    updateDraft(validateDraft(updatedDraft));
+    const totals = calculateTotals(updatedItems);
+    updateDraft(validateDraft({ ...draft, items: updatedItems, ...totals }));
   };
 
   const addItem = () => {
     const newItem: LineItem = {
-      id: crypto.randomUUID(),
-      name: '',
-      spec: '',
-      qty: 1,
-      unitPrice: 0,
-      supplyAmount: 0,
-      vatAmount: 0
+      id: crypto.randomUUID(), name: '', spec: '', qty: 1, unitPrice: 0, supplyAmount: 0, vatAmount: 0
     };
-    const updated = { ...draft, items: [...draft.items, newItem] };
-    updateDraft(validateDraft(updated));
+    updateDraft(validateDraft({ ...draft, items: [...draft.items, newItem] }));
     setActiveTab('items');
   };
 
-  const deleteItem = (itemId: string) => {
-    const updatedItems = draft.items.filter(i => i.id !== itemId);
-    const totals = calculateTotals(updatedItems);
-    const updated = { ...draft, items: updatedItems, ...totals };
-    updateDraft(validateDraft(updated));
-  };
-
-  const warningCount = draft.warnings.length;
-
   return (
-    <div className="pb-24 max-w-2xl mx-auto relative">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4 animate-bounce-in">
-          <div className="bg-gray-800 text-white px-4 py-3 rounded-xl shadow-xl flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertCircle size={20} className="text-orange-400" />
-              <span className="text-sm font-medium">{toastMessage}</span>
-            </div>
-            <button onClick={() => setToastMessage(null)} className="text-gray-400 hover:text-white">
-              <X size={18} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="sticky top-0 bg-[#F2F4F6] z-10 px-4 py-4 flex items-center justify-between">
-        <button onClick={() => navigate('/')} className="p-2 -ml-2 text-gray-600 hover:bg-gray-200 rounded-full">
+    <div className="min-h-screen bg-[#F9FAFB] pb-32">
+      {/* 상단 고정 헤더 */}
+      <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+        <button onClick={() => navigate('/')} className="p-2 -ml-3 text-gray-400 hover:text-gray-900">
           <ArrowLeft size={24} />
         </button>
-        <h1 className="font-bold text-lg text-gray-900">내용 확인 및 수정</h1>
+        <div className="text-center">
+          <p className="text-[11px] font-bold text-gray-300 tracking-tight mb-0.5">기록 수정하기</p>
+          <h1 className="font-extrabold text-sm text-gray-900">{draft.buyer.name || '내역 상세'}</h1>
+        </div>
         <div className="w-10" />
-      </div>
+      </header>
 
-      <div className="px-4 space-y-4">
-        {/* Warning Banner */}
-        {warningCount > 0 && (
-          <div className="bg-orange-50 text-orange-800 px-4 py-3 rounded-xl flex items-start gap-3 text-sm animate-pulse">
-            <AlertCircle size={18} className="mt-0.5 shrink-0" />
+      <div className="max-w-xl mx-auto px-6 mt-6 space-y-6">
+        {/* 총액 요약 카드 */}
+        <Card className="bg-black text-white border-none shadow-xl shadow-black/10 !p-7">
+          <div className="flex justify-between items-start mb-8">
             <div>
-              <p className="font-bold">확인이 필요한 항목이 {warningCount}개 있어요.</p>
-              <p className="text-orange-600 text-xs mt-1">입력란의 붉은 테두리를 확인해주세요.</p>
+              <p className="text-gray-500 text-xs font-bold mb-1.5">최종 합계 금액</p>
+              <p className="text-3xl font-black">{formatCurrency(draft.totalAmount)}<span className="text-lg font-bold text-gray-500 ml-1.5">원</span></p>
             </div>
-          </div>
-        )}
-
-        {/* Summary Card (Always Visible) */}
-        <Card className="bg-blue-600 text-white border-none">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <p className="text-blue-200 text-sm font-medium mb-1">합계 금액</p>
-              <p className="text-3xl font-bold">{formatCurrency(draft.totalAmount)}원</p>
-            </div>
-            <div className="bg-blue-500 px-3 py-1 rounded-lg text-xs font-semibold">
+            <div className="bg-white/10 px-4 py-1.5 rounded-full text-xs font-bold text-white/80">
               {draft.billingType || '청구'}
             </div>
           </div>
-          <div className="flex gap-4 text-sm text-blue-100">
+          <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/10">
             <div>
-              <span className="opacity-70 mr-2">공급가액</span>
-              <span className="font-medium">{formatCurrency(draft.totalSupplyAmount)}</span>
+              <p className="text-white/30 text-[11px] font-bold mb-1">공급가액</p>
+              <p className="font-bold text-base">{formatCurrency(draft.totalSupplyAmount)}</p>
             </div>
             <div>
-              <span className="opacity-70 mr-2">세액</span>
-              <span className="font-medium">{formatCurrency(draft.totalVatAmount)}</span>
+              <p className="text-white/30 text-[11px] font-bold mb-1">부가세</p>
+              <p className="font-bold text-base text-blue-400">{formatCurrency(draft.totalVatAmount)}</p>
             </div>
           </div>
         </Card>
 
-        {/* Tabs */}
-        <div className="flex p-1 bg-gray-200 rounded-xl">
+        {/* 탭 전환 */}
+        <div className="flex p-1.5 bg-gray-200/50 rounded-2xl">
           <button 
             onClick={() => setActiveTab('info')}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${activeTab === 'info' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
+            className={`flex-1 py-3 text-[13px] font-bold rounded-xl transition-all ${activeTab === 'info' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}
           >
             거래처 정보
           </button>
           <button 
             onClick={() => setActiveTab('items')}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${activeTab === 'items' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
+            className={`flex-1 py-3 text-[13px] font-bold rounded-xl transition-all ${activeTab === 'items' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}
           >
-            품목 ({draft.items.length})
+            품목 리스트
           </button>
         </div>
 
-        {/* Content */}
+        {/* 탭별 내용 */}
         {activeTab === 'info' ? (
           <div className="space-y-4">
-            <Card title="받는 분 (공급받는 자)">
-              <div className="space-y-4">
-                <InputField 
-                  label="사업자번호" 
-                  value={draft.buyer.bizNo || ''} 
-                  onChange={(v) => handleBuyerChange('bizNo', v)}
-                  error={hasError(draft, 'buyer.bizNo')}
-                  placeholder="000-00-00000"
-                />
-                <InputField 
-                  label="상호 (법인명)" 
-                  value={draft.buyer.name || ''} 
-                  onChange={(v) => handleBuyerChange('name', v)}
-                  error={hasError(draft, 'buyer.name')}
-                />
-                <InputField 
-                  label="대표자명" 
-                  value={draft.buyer.ceoName || ''} 
-                  onChange={(v) => handleBuyerChange('ceoName', v)}
-                />
-                <InputField 
-                  label="이메일" 
-                  value={draft.buyer.email || ''} 
-                  onChange={(v) => handleBuyerChange('email', v)}
-                  type="email"
-                />
+            <Card title="사업자 정보">
+              <div className="space-y-6">
+                <InputField label="사업자 등록 번호" value={draft.buyer.bizNo || ''} onChange={(v) => handleBuyerChange('bizNo', v)} placeholder="000-00-00000" />
+                <InputField label="상호 (업체명)" value={draft.buyer.name || ''} onChange={(v) => handleBuyerChange('name', v)} />
+                <InputField label="대표자 성명" value={draft.buyer.ceoName || ''} onChange={(v) => handleBuyerChange('ceoName', v)} />
               </div>
             </Card>
-            <Card title="작성 일자">
-               <InputField 
-                  label="발행일" 
-                  value={draft.issueDate || ''} 
-                  onChange={(v) => {
-                    const updated = { ...draft, issueDate: v };
-                    updateDraft(validateDraft(updated));
-                  }}
-                  type="date"
-                />
+            <Card title="날짜 정보">
+               <InputField label="발행 일자" value={draft.issueDate || ''} onChange={(v) => updateDraft(validateDraft({ ...draft, issueDate: v }))} type="date" />
             </Card>
           </div>
         ) : (
           <div className="space-y-4">
             {draft.items.map((item, idx) => (
-              <Card key={item.id} className="relative">
-                <div className="absolute top-4 right-4">
-                  <button onClick={() => deleteItem(item.id)} className="text-gray-400 hover:text-red-500">
+              <Card key={item.id} className="relative group border-gray-100">
+                <div className="flex justify-between items-center mb-5">
+                  <span className="px-3 py-1 bg-gray-50 rounded-lg text-xs font-black text-gray-400 italic">
+                    {idx + 1}번째 품목
+                  </span>
+                  <button onClick={() => updateDraft(validateDraft({ ...draft, items: draft.items.filter(i => i.id !== item.id) }))} className="text-gray-300 hover:text-red-500 transition-colors">
                     <Trash2 size={18} />
                   </button>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <label className="block text-xs text-gray-500 mb-1">품목명</label>
-                      <input 
-                        className={`w-full bg-gray-50 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none ${hasError(draft, `items[${idx}].name`) ? 'ring-1 ring-red-500' : ''}`}
-                        value={item.name || ''}
-                        onChange={(e) => handleItemChange(item.id, 'name', e.target.value)}
-                      />
-                    </div>
+                <div className="space-y-5">
+                  <div className="relative">
+                    <label className="block text-[11px] font-bold text-gray-300 mb-1.5 ml-1">품목명</label>
+                    <input 
+                      className="w-full text-lg font-extrabold text-gray-900 bg-transparent border-b border-gray-100 focus:border-blue-500 outline-none pb-2"
+                      placeholder="무엇을 팔았나요?"
+                      value={item.name || ''}
+                      onChange={(e) => handleItemChange(item.id, 'name', e.target.value)}
+                    />
                   </div>
-                  <div className="flex gap-2">
-                    <div className="w-20 shrink-0">
-                      <label className="block text-xs text-gray-500 mb-1">수량</label>
-                      <input 
-                        type="number"
-                        className="w-full bg-gray-50 rounded-lg px-3 py-2 text-sm text-right outline-none"
-                        value={item.qty || 0}
-                        onChange={(e) => handleItemChange(item.id, 'qty', Number(e.target.value))}
-                      />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-300 mb-1.5 ml-1">수량</label>
+                      <input type="number" className="w-full bg-gray-50 rounded-xl px-4 py-3.5 text-base font-bold outline-none border border-transparent focus:border-blue-100" value={item.qty || 0} onChange={(e) => handleItemChange(item.id, 'qty', Number(e.target.value))} />
                     </div>
-                    <div className="flex-1">
-                      <label className="block text-xs text-gray-500 mb-1">단가</label>
-                      <input 
-                        type="number"
-                        className="w-full bg-gray-50 rounded-lg px-3 py-2 text-sm text-right outline-none"
-                        value={item.unitPrice || 0}
-                        onChange={(e) => handleItemChange(item.id, 'unitPrice', Number(e.target.value))}
-                      />
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-300 mb-1.5 ml-1">단가</label>
+                      <input type="number" className="w-full bg-gray-50 rounded-xl px-4 py-3.5 text-base font-bold outline-none border border-transparent focus:border-blue-100" value={item.unitPrice || 0} onChange={(e) => handleItemChange(item.id, 'unitPrice', Number(e.target.value))} />
                     </div>
-                  </div>
-                  <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
-                    <span className="text-xs text-gray-500">공급가액</span>
-                    <span className="text-sm font-bold text-gray-800">{formatCurrency(item.supplyAmount)}원</span>
                   </div>
                 </div>
               </Card>
             ))}
-            <Button variant="secondary" fullWidth onClick={addItem} className="py-4 border-dashed border-2">
-              <Plus size={18} className="mr-2" /> 품목 추가하기
-            </Button>
+            <button onClick={addItem} className="w-full py-8 border-2 border-dashed border-gray-200 rounded-[28px] text-gray-400 font-extrabold text-[15px] hover:border-gray-400 hover:text-gray-500 transition-all flex flex-col items-center gap-3 bg-white/50">
+              <Plus size={28} />
+              여기를 눌러 품목 추가
+            </button>
           </div>
         )}
       </div>
 
-      {/* Floating Action Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 max-w-2xl mx-auto">
-        <Button fullWidth onClick={() => navigate('/')} className="bg-gray-900 hover:bg-black text-white">
-          <Save size={18} className="mr-2" />
-          저장하고 목록으로
+      {/* 하단 저장 버튼 */}
+      <div className="fixed bottom-8 left-6 right-6 max-w-xl mx-auto">
+        <Button fullWidth onClick={() => navigate('/')} className="h-16 rounded-2xl text-[17px] font-black shadow-2xl shadow-black/20">
+          이 내용으로 저장 완료
         </Button>
       </div>
     </div>
   );
 };
 
-const InputField = ({ label, value, onChange, error, type = 'text', placeholder = '' }: any) => (
-  <div>
-    <label className="block text-xs text-gray-500 mb-1">{label}</label>
+const InputField = ({ label, value, onChange, type = 'text', placeholder = '' }: any) => (
+  <div className="group">
+    <label className="block text-[11px] font-extrabold text-gray-400 uppercase tracking-tighter mb-2 ml-1">{label}</label>
     <input 
       type={type}
-      className={`w-full bg-gray-50 rounded-lg px-3 py-2.5 text-base text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all ${error ? 'ring-1 ring-red-500 bg-red-50' : ''}`}
+      className="w-full bg-gray-50 rounded-xl px-4 py-4 text-base font-bold text-gray-900 outline-none focus:ring-4 focus:ring-blue-500/5 focus:bg-white border border-transparent focus:border-blue-200 transition-all"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
     />
-    {error && <p className="text-xs text-red-500 mt-1">확인이 필요합니다</p>}
   </div>
 );
-
-const hasError = (draft: InvoiceDraft, path: string) => {
-  return draft.warnings.some(w => w.fieldPath === path);
-};
