@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home as HomeIcon, Plus, User, Building2, UserCircle, MapPin, Mail, Sparkles, BookOpen, FileSearch } from 'lucide-react';
+import { Home as HomeIcon, Plus, User, Building2, UserCircle, MapPin, Mail, Sparkles, BookOpen, FileSearch, Check } from 'lucide-react';
 import { Party } from '../types';
 import { Card } from '../components/Card';
 import { Logo } from '../components/Logo';
@@ -27,7 +27,7 @@ export const MyInfo: React.FC<MyInfoProps> = ({ myInfo, setMyInfo }) => {
   };
 
   return (
-    <div className="max-w-xl mx-auto min-h-screen bg-[#F9FAFB] pb-40">
+    <div className="max-w-xl mx-auto min-h-screen bg-[#F9FAFB] pb-44">
       <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-6 h-24 flex items-center shadow-sm transition-all">
         <Logo size={24} showTagline={true} />
       </header>
@@ -79,13 +79,12 @@ export const MyInfo: React.FC<MyInfoProps> = ({ myInfo, setMyInfo }) => {
         </section>
 
         <section className="px-2">
-          <Button 
-            fullWidth 
+          <button 
             onClick={handleSave} 
-            className="h-16 rounded-2xl text-[16px] font-black shadow-xl shadow-blue-600/10 bg-blue-600 hover:bg-blue-700"
+            className="w-full h-18 bg-blue-600 text-white rounded-2xl font-black text-[18px] flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-blue-500/20 py-5"
           >
-            위 내용으로 내 정보 저장하기
-          </Button>
+            <Check size={26} strokeWidth={3} /> 위 내용으로 내 정보 저장하기
+          </button>
           <p className="mt-6 text-center text-[12px] font-bold text-gray-300 px-6 leading-relaxed">
             여기에 입력한 정보는 세금계산서 생성 시<br/>'공급자' 정보로 자동 입력됩니다.
           </p>
