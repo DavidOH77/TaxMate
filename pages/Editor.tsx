@@ -48,54 +48,63 @@ export const Editor: React.FC<EditorProps> = ({ draft, updateDraft }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] pb-32">
+    <div className="min-h-screen bg-[#F9FAFB] pb-40">
       {/* 상단 고정 헤더 */}
-      <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-        <button onClick={() => navigate('/')} className="p-2 -ml-3 text-gray-400 hover:text-gray-900">
-          <ArrowLeft size={24} />
+      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-gray-100 px-6 py-6 flex items-center justify-between">
+        <button onClick={() => navigate('/')} className="p-2 -ml-3 text-gray-400 hover:text-gray-900 transition-colors">
+          <ArrowLeft size={28} />
         </button>
         <div className="text-center">
-          <p className="text-[11px] font-bold text-gray-300 tracking-tight mb-0.5">기록 수정하기</p>
-          <h1 className="font-extrabold text-sm text-gray-900">{draft.buyer.name || '내역 상세'}</h1>
+          <p className="text-[12px] font-black text-gray-400 tracking-widest mb-1">기록 수정하기</p>
+          <h1 className="font-black text-[16px] text-gray-900">{draft.buyer.name || '내역 상세'}</h1>
         </div>
         <div className="w-10" />
       </header>
 
-      <div className="max-w-xl mx-auto px-6 mt-6 space-y-6">
-        {/* 총액 요약 카드 */}
-        <Card className="bg-black text-white border-none shadow-xl shadow-black/10 !p-7">
-          <div className="flex justify-between items-start mb-8">
-            <div>
-              <p className="text-gray-500 text-xs font-bold mb-1.5">최종 합계 금액</p>
-              <p className="text-3xl font-black">{formatCurrency(draft.totalAmount)}<span className="text-lg font-bold text-gray-500 ml-1.5">원</span></p>
+      <div className="max-w-xl mx-auto px-6 mt-8 space-y-10">
+        {/* 총액 요약 카드 - 가독성 및 여백 강화 */}
+        <Card className="bg-white border-2 border-blue-50 shadow-[0_12px_40px_rgba(0,0,0,0.06)] !p-10">
+          <div className="flex justify-between items-start mb-12">
+            <div className="space-y-3">
+              <p className="text-gray-500 text-[14px] font-black tracking-tight">최종 합계 금액</p>
+              <div className="flex items-center gap-3">
+                <span className="text-gray-900 text-2xl font-black">원</span>
+              </div>
             </div>
-            <div className="bg-white/10 px-4 py-1.5 rounded-full text-xs font-bold text-white/80">
+            <div className="bg-blue-600 px-5 py-2 rounded-2xl text-[12px] font-black text-white shadow-lg shadow-blue-500/20">
               {draft.billingType || '청구'}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/10">
-            <div>
-              <p className="text-white/30 text-[11px] font-bold mb-1">공급가액</p>
-              <p className="font-bold text-base">{formatCurrency(draft.totalSupplyAmount)}</p>
+          
+          <div className="flex flex-col items-end mb-10">
+            <h2 className="text-5xl font-black text-blue-600 tracking-tighter">
+              {formatCurrency(draft.totalAmount)}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 gap-8 pt-8 border-t-2 border-gray-50">
+            <div className="space-y-1">
+              <p className="text-gray-400 text-[12px] font-bold">공급가액</p>
+              <p className="font-black text-[18px] text-gray-900">{formatCurrency(draft.totalSupplyAmount)}</p>
             </div>
-            <div>
-              <p className="text-white/30 text-[11px] font-bold mb-1">부가세</p>
-              <p className="font-bold text-base text-blue-400">{formatCurrency(draft.totalVatAmount)}</p>
+            <div className="space-y-1">
+              <p className="text-gray-400 text-[12px] font-bold">부가세</p>
+              <p className="font-black text-[18px] text-gray-900">{formatCurrency(draft.totalVatAmount)}</p>
             </div>
           </div>
         </Card>
 
-        {/* 탭 전환 */}
-        <div className="flex p-1.5 bg-gray-200/50 rounded-2xl">
+        {/* 탭 전환 - 여백 확대 */}
+        <div className="flex p-2 bg-gray-200/60 rounded-3xl">
           <button 
             onClick={() => setActiveTab('info')}
-            className={`flex-1 py-3 text-[13px] font-bold rounded-xl transition-all ${activeTab === 'info' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}
+            className={`flex-1 py-4 text-[14px] font-black rounded-2xl transition-all ${activeTab === 'info' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-500'}`}
           >
             거래처 정보
           </button>
           <button 
             onClick={() => setActiveTab('items')}
-            className={`flex-1 py-3 text-[13px] font-bold rounded-xl transition-all ${activeTab === 'items' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}
+            className={`flex-1 py-4 text-[14px] font-black rounded-2xl transition-all ${activeTab === 'items' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-500'}`}
           >
             품목 리스트
           </button>
@@ -103,55 +112,23 @@ export const Editor: React.FC<EditorProps> = ({ draft, updateDraft }) => {
 
         {/* 탭별 내용 */}
         {activeTab === 'info' ? (
-          <div className="space-y-4">
-            <Card title="사업자 정보">
-              <div className="space-y-6">
-                <InputField label="사업자 등록 번호" value={draft.buyer.bizNo || ''} onChange={(v) => handleBuyerChange('bizNo', v)} placeholder="000-00-00000" />
-                <InputField label="상호 (업체명)" value={draft.buyer.name || ''} onChange={(v) => handleBuyerChange('name', v)} />
-                <InputField label="대표자 성명" value={draft.buyer.ceoName || ''} onChange={(v) => handleBuyerChange('ceoName', v)} />
+          <div className="space-y-6">
+            <Card title="사업자 상세 정보" className="!p-8">
+              <div className="space-y-8">
+                <InputField label="사업자 등록 번호" value={draft.buyer.bizNo || ''} onChange={(v: string) => handleBuyerChange('bizNo', v)} placeholder="000-00-00000" />
+                <InputField label="상호 (업체명)" value={draft.buyer.name || ''} onChange={(v: string) => handleBuyerChange('name', v)} />
+                <InputField label="대표자 성명" value={draft.buyer.ceoName || ''} onChange={(v: string) => handleBuyerChange('ceoName', v)} />
               </div>
             </Card>
-            <Card title="날짜 정보">
-               <InputField label="발행 일자" value={draft.issueDate || ''} onChange={(v) => updateDraft(validateDraft({ ...draft, issueDate: v }))} type="date" />
+            <Card title="날짜 및 기간" className="!p-8">
+               <InputField label="발행 일자" value={draft.issueDate || ''} onChange={(v: string) => updateDraft(validateDraft({ ...draft, issueDate: v }))} type="date" />
             </Card>
           </div>
         ) : (
-          <div className="space-y-4">
-            {draft.items.map((item, idx) => (
-              <Card key={item.id} className="relative group border-gray-100">
-                <div className="flex justify-between items-center mb-5">
-                  <span className="px-3 py-1 bg-gray-50 rounded-lg text-xs font-black text-gray-400 italic">
-                    {idx + 1}번째 품목
-                  </span>
-                  <button onClick={() => updateDraft(validateDraft({ ...draft, items: draft.items.filter(i => i.id !== item.id) }))} className="text-gray-300 hover:text-red-500 transition-colors">
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-                <div className="space-y-5">
-                  <div className="relative">
-                    <label className="block text-[11px] font-bold text-gray-300 mb-1.5 ml-1">품목명</label>
-                    <input 
-                      className="w-full text-lg font-extrabold text-gray-900 bg-transparent border-b border-gray-100 focus:border-blue-500 outline-none pb-2"
-                      placeholder="무엇을 팔았나요?"
-                      value={item.name || ''}
-                      onChange={(e) => handleItemChange(item.id, 'name', e.target.value)}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-bold text-gray-300 mb-1.5 ml-1">수량</label>
-                      <input type="number" className="w-full bg-gray-50 rounded-xl px-4 py-3.5 text-base font-bold outline-none border border-transparent focus:border-blue-100" value={item.qty || 0} onChange={(e) => handleItemChange(item.id, 'qty', Number(e.target.value))} />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-gray-300 mb-1.5 ml-1">단가</label>
-                      <input type="number" className="w-full bg-gray-50 rounded-xl px-4 py-3.5 text-base font-bold outline-none border border-transparent focus:border-blue-100" value={item.unitPrice || 0} onChange={(e) => handleItemChange(item.id, 'unitPrice', Number(e.target.value))} />
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-            <button onClick={addItem} className="w-full py-8 border-2 border-dashed border-gray-200 rounded-[28px] text-gray-400 font-extrabold text-[15px] hover:border-gray-400 hover:text-gray-500 transition-all flex flex-col items-center gap-3 bg-white/50">
-              <Plus size={28} />
+          <div className="space-y-6">
+            {draftsItems(draft, handleItemChange, updateDraft)}
+            <button onClick={addItem} className="w-full py-12 border-4 border-dashed border-gray-100 rounded-[40px] text-gray-400 font-black text-[16px] hover:border-blue-100 hover:text-blue-500 transition-all flex flex-col items-center gap-4 bg-white shadow-sm">
+              <Plus size={32} />
               여기를 눌러 품목 추가
             </button>
           </div>
@@ -159,21 +136,57 @@ export const Editor: React.FC<EditorProps> = ({ draft, updateDraft }) => {
       </div>
 
       {/* 하단 저장 버튼 */}
-      <div className="fixed bottom-8 left-6 right-6 max-w-xl mx-auto">
-        <Button fullWidth onClick={() => navigate('/')} className="h-16 rounded-2xl text-[17px] font-black shadow-2xl shadow-black/20">
-          이 내용으로 저장 완료
+      <div className="fixed bottom-10 left-6 right-6 max-w-xl mx-auto z-30">
+        <Button fullWidth onClick={() => navigate('/')} className="h-20 rounded-[28px] text-[19px] font-black shadow-2xl shadow-blue-600/20 bg-blue-600 hover:bg-blue-700">
+          기록 저장 완료하기
         </Button>
       </div>
     </div>
   );
 };
 
+const draftsItems = (draft: any, handleItemChange: any, updateDraft: any) => (
+  draft.items.map((item: any, idx: number) => (
+    <Card key={item.id} className="relative group border-2 border-gray-50 !p-8">
+      <div className="flex justify-between items-center mb-8">
+        <span className="px-4 py-1.5 bg-blue-50 rounded-xl text-[12px] font-black text-blue-600">
+          {idx + 1}번째 품목
+        </span>
+        <button onClick={() => updateDraft(validateDraft({ ...draft, items: draft.items.filter((i: any) => i.id !== item.id) }))} className="p-2 text-gray-300 hover:text-red-500 transition-colors">
+          <Trash2 size={22} />
+        </button>
+      </div>
+      <div className="space-y-8">
+        <div className="relative">
+          <label className="block text-[12px] font-black text-gray-400 mb-3 ml-1">품목명</label>
+          <input 
+            className="w-full text-xl font-black text-gray-900 bg-transparent border-b-2 border-gray-100 focus:border-blue-600 outline-none pb-3 px-1"
+            placeholder="무엇을 팔았나요?"
+            value={item.name || ''}
+            onChange={(e) => handleItemChange(item.id, 'name', e.target.value)}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="block text-[12px] font-black text-gray-400 mb-3 ml-1">수량</label>
+            <input type="number" className="w-full bg-gray-50 rounded-2xl px-5 py-5 text-lg font-black outline-none border-2 border-transparent focus:border-blue-100" value={item.qty || 0} onChange={(e) => handleItemChange(item.id, 'qty', Number(e.target.value))} />
+          </div>
+          <div>
+            <label className="block text-[12px] font-black text-gray-400 mb-3 ml-1">단가</label>
+            <input type="number" className="w-full bg-gray-50 rounded-2xl px-5 py-5 text-lg font-black outline-none border-2 border-transparent focus:border-blue-100" value={item.unitPrice || 0} onChange={(e) => handleItemChange(item.id, 'unitPrice', Number(e.target.value))} />
+          </div>
+        </div>
+      </div>
+    </Card>
+  ))
+);
+
 const InputField = ({ label, value, onChange, type = 'text', placeholder = '' }: any) => (
   <div className="group">
-    <label className="block text-[11px] font-extrabold text-gray-400 uppercase tracking-tighter mb-2 ml-1">{label}</label>
+    <label className="block text-[12px] font-black text-gray-400 uppercase tracking-wider mb-3 ml-1">{label}</label>
     <input 
       type={type}
-      className="w-full bg-gray-50 rounded-xl px-4 py-4 text-base font-bold text-gray-900 outline-none focus:ring-4 focus:ring-blue-500/5 focus:bg-white border border-transparent focus:border-blue-200 transition-all"
+      className="w-full bg-gray-50 rounded-2xl px-6 py-5 text-[17px] font-black text-gray-900 outline-none focus:ring-8 focus:ring-blue-600/5 focus:bg-white border-2 border-transparent focus:border-blue-600 transition-all"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}

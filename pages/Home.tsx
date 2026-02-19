@@ -154,7 +154,7 @@ export const Home: React.FC<HomeProps> = ({ drafts, deleteDraft }) => {
 
       {/* 하단 정보 */}
       <footer className="mt-24 pb-10 text-center border-t border-gray-100 pt-10">
-        <p className="text-[11px] text-gray-300 font-bold tracking-widest uppercase italic mb-2">세정(世整理) · 세상의 모든 장부를 정리하다</p>
+        <p className="text-[11px] text-gray-400 font-black tracking-tight mb-2 uppercase italic">세정 · 세금을 쉽게 정리하다</p>
         <p className="text-[10px] text-gray-200 font-bold tracking-tighter">Powered by Gemini Pro Vision AI</p>
       </footer>
     </div>
