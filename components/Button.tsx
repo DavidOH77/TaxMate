@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -14,11 +15,11 @@ export const Button: React.FC<ButtonProps> = ({
   className = '',
   ...props 
 }) => {
-  const baseStyle = "inline-flex items-center justify-center rounded-full font-semibold transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed";
+  const baseStyle = "inline-flex items-center justify-center rounded-full font-semibold transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed";
   
   const variants = {
-    primary: "bg-gray-900 text-white hover:bg-black active:scale-95",
-    secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200 active:scale-95",
+    primary: "bg-gray-900 text-white hover:bg-black",
+    secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200",
     ghost: "text-gray-500 hover:text-gray-900 hover:bg-gray-50",
     danger: "text-red-500 hover:bg-red-50",
   };

@@ -1,13 +1,17 @@
+
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Upload } from './pages/Upload';
 import { Editor } from './pages/Editor';
 import { Home } from './pages/Home';
+import { MyInfo } from './pages/MyInfo';
+import { Intro } from './pages/Intro';
+import { CreateChoice } from './pages/CreateChoice';
+import { History } from './pages/History';
 import { InvoiceDraft, Party } from './types';
-import { MOCK_MY_INFO } from './constants';
+import { MOCK_MY_INFO, EMPTY_DRAFT } from './constants';
 
 const App: React.FC = () => {
-  // Load drafts from LocalStorage on init
   const [drafts, setDrafts] = useState<InvoiceDraft[]>(() => {
     const saved = localStorage.getItem('taxmate_drafts');
     return saved ? JSON.parse(saved) : [];
@@ -18,12 +22,10 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : MOCK_MY_INFO;
   });
 
-  // Persist drafts whenever they change
   useEffect(() => {
     localStorage.setItem('taxmate_drafts', JSON.stringify(drafts));
   }, [drafts]);
 
-  // Persist myInfo
   useEffect(() => {
     localStorage.setItem('taxmate_my_info', JSON.stringify(myInfo));
   }, [myInfo]);
@@ -36,54 +38,83 @@ const App: React.FC = () => {
         newDrafts[idx] = draft;
         return newDrafts;
       }
-      return [draft, ...prev]; // Newest first
+      return [draft, ...prev];
     });
   };
 
   const deleteDraft = (id: string) => {
-    if (confirm('정말 삭제하시겠습니까?')) {
-      setDrafts(prev => prev.filter(d => d.id !== id));
-    }
+    setDrafts(prev => prev.filter(d => d.id !== id));
   };
 
   const getDraft = (id: string) => drafts.find(d => d.id === id) || null;
 
   return (
-    <div className="min-h-screen bg-[#F2F4F6] text-gray-900 font-sans">
-      <HashRouter>
-        <Routes>
-          <Route 
-            path="/" 
-            element={<Home drafts={drafts} deleteDraft={deleteDraft} />} 
-          />
-          <Route 
-            path="/upload" 
-            element={<Upload onSave={saveDraft} myInfo={myInfo} />} 
-          />
-          <Route 
-            path="/draft/:id" 
-            element={
-              <DraftLoader 
-                getDraft={getDraft} 
-                saveDraft={saveDraft} 
-              />
-            } 
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </HashRouter>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-xl mx-auto min-h-screen bg-[#F9FAFB] shadow-[0_0_50px_rgba(0,0,0,0.05)] relative">
+        <HashRouter>
+          <Routes>
+            <Route 
+              path="/" 
+              element={<Home drafts={drafts} deleteDraft={deleteDraft} onSave={saveDraft} />} 
+            />
+            <Route 
+              path="/upload" 
+              element={<Upload onSave={saveDraft} myInfo={myInfo} />} 
+            />
+            <Route 
+              path="/create" 
+              element={<CreateChoice onSave={saveDraft} />} 
+            />
+            <Route 
+              path="/history" 
+              element={<History drafts={drafts} />} 
+            />
+            <Route 
+              path="/intro" 
+              element={<Intro />} 
+            />
+            <Route 
+              path="/my-info" 
+              element={<MyInfo myInfo={myInfo} setMyInfo={setMyInfo} />} 
+            />
+            <Route 
+              path="/draft/:id" 
+              element={
+                <DraftLoader 
+                  getDraft={getDraft} 
+                  saveDraft={saveDraft} 
+                  deleteDraft={deleteDraft}
+                  allDrafts={drafts}
+                  myInfo={myInfo}
+                />
+              } 
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </HashRouter>
+      </div>
     </div>
   );
 };
 
-// Helper component to extract ID and pass specific draft
-const DraftLoader = ({ getDraft, saveDraft }: { getDraft: (id: string) => InvoiceDraft | null, saveDraft: (d: InvoiceDraft) => void }) => {
+const DraftLoader = ({ getDraft, saveDraft, deleteDraft, allDrafts, myInfo }: { 
+  getDraft: (id: string) => InvoiceDraft | null, 
+  saveDraft: (d: InvoiceDraft) => void, 
+  deleteDraft: (id: string) => void, 
+  allDrafts: InvoiceDraft[],
+  myInfo: Party
+}) => {
   const { id } = useParams();
-  const draft = id ? getDraft(id) : null;
   
-  if (!draft) return <Navigate to="/" replace />;
+  // 새 장부인 경우
+  if (id === 'new') {
+    const newDraft = { ...EMPTY_DRAFT, id: crypto.randomUUID(), supplier: myInfo };
+    return <Editor draft={newDraft} isNew={true} updateDraft={saveDraft} deleteDraft={deleteDraft} allDrafts={allDrafts} />;
+  }
 
-  return <Editor draft={draft} updateDraft={saveDraft} />;
+  const draft = id ? getDraft(id) : null;
+  if (!draft) return <Navigate to="/" replace />;
+  return <Editor draft={draft} isNew={false} updateDraft={saveDraft} deleteDraft={deleteDraft} allDrafts={allDrafts} />;
 };
 
 export default App;

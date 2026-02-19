@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Camera, FileSpreadsheet, MousePointerClick, ShieldCheck } from 'lucide-react';
 import { Card } from './Card';
@@ -22,7 +23,7 @@ export const ServiceGuide: React.FC = () => {
   ];
 
   return (
-    <div className="mt-12 space-y-6">
+    <div className="space-y-6">
       <div className="px-1">
         <h2 className="text-[17px] font-black text-gray-900 mb-1">세정은 어떻게 도와주나요?</h2>
         <p className="text-xs font-bold text-gray-400">사장님의 장부 정리 시간을 90% 이상 줄여드립니다.</p>

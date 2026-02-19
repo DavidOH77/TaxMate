@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, ShieldCheck, Camera, FileImage } from 'lucide-react';
+import { ArrowLeft, Plus, ShieldCheck, Camera, FileImage, Scan } from 'lucide-react';
 import { MOCK_DRAFT, EMPTY_DRAFT } from '../constants';
 import { processWithGemini } from '../services/geminiService';
 import { validateDraft } from '../utils/calculation';
@@ -57,7 +58,7 @@ export const Upload: React.FC<UploadProps> = ({ onSave, myInfo }) => {
   };
 
   return (
-    <div className="max-w-xl mx-auto h-screen flex flex-col px-6 py-10 bg-white">
+    <div className="w-full h-screen flex flex-col px-6 py-10 bg-white">
       <header className="mb-14">
         <button onClick={() => navigate('/')} className="p-2 -ml-2 text-gray-400 hover:text-gray-900 transition-colors">
           <ArrowLeft size={24} />
@@ -67,21 +68,21 @@ export const Upload: React.FC<UploadProps> = ({ onSave, myInfo }) => {
       <div className="flex-1 flex flex-col items-center justify-center text-center">
         {loading ? (
           <div className="animate-pulse space-y-8">
-            <div className="w-20 h-20 bg-black rounded-[32px] mx-auto flex items-center justify-center text-white">
-              <Camera size={32} />
+            <div className="w-20 h-20 bg-blue-600 rounded-[32px] mx-auto flex items-center justify-center text-white shadow-xl">
+              <Scan size={32} className="animate-bounce" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-gray-900 tracking-tight mb-2">세정 인공지능이<br/>문서를 읽고 있습니다</h1>
-              <p className="text-gray-400 text-sm font-bold">세금계산서의 항목들을 꼼꼼하게 정리 중입니다.</p>
+              <h1 className="text-2xl font-black text-gray-900 tracking-tight mb-2">세정 인공지능이<br/>내용을 읽고 있습니다</h1>
+              <p className="text-gray-400 text-sm font-bold">글자와 숫자를 데이터로 변환하는 중입니다.</p>
             </div>
           </div>
         ) : (
-          <div className="w-full max-w-sm">
+          <div className="w-full max-w-sm px-4">
             <h1 className="text-3xl font-black text-gray-900 tracking-tighter mb-4 leading-tight">
-              세금계산서나 명세표를<br/>사진 찍거나 올려주세요.
+              등록하실 종이 문서를<br/>찍어주세요.
             </h1>
             <p className="text-gray-500 text-[15px] font-bold mb-14 leading-relaxed">
-              수기 명세표라도 괜찮습니다.<br/>AI가 거래처와 품목을 자동 추출해 드릴게요.
+              거래명세표나 영수증 사진을 올리면,<br/>AI가 홈택스 입력용 데이터로 변환해 드립니다.
             </p>
             
             <label className="group relative block w-full aspect-square border-2 border-dashed border-gray-200 rounded-[40px] cursor-pointer hover:border-black hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-6 bg-gray-50/50 shadow-inner">
@@ -99,9 +100,9 @@ export const Upload: React.FC<UploadProps> = ({ onSave, myInfo }) => {
                   <FileImage size={28} />
                 </div>
               </div>
-              <div className="text-center">
-                <span className="text-lg font-black text-gray-900 block">문서 촬영 및 파일 선택</span>
-                <span className="text-xs font-bold text-gray-400 mt-1 block">JPG, PNG 등 이미지 파일 지원</span>
+              <div className="text-center px-4">
+                <span className="text-lg font-black text-gray-900 block">문서 촬영 및 사진 선택</span>
+                <span className="text-xs font-bold text-gray-400 mt-1 block">수기 명세표도 인식 가능합니다</span>
               </div>
             </label>
           </div>
@@ -110,7 +111,7 @@ export const Upload: React.FC<UploadProps> = ({ onSave, myInfo }) => {
 
       <footer className="mt-auto pt-10 flex items-center justify-center gap-2 text-gray-400">
         <ShieldCheck size={16} className="text-blue-500" />
-        <span className="text-xs font-extrabold tracking-tighter">데이터는 암호화되어 안전하게 보호됩니다</span>
+        <span className="text-xs font-extrabold tracking-tighter">보안 기술로 사장님의 정보를 안전하게 지킵니다</span>
       </footer>
     </div>
   );

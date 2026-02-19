@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
   <head>
@@ -7,24 +8,29 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+      /* 스크롤바가 생기고 없어질 때 좌우 흔들림 방지 */
+      html {
+        overflow-y: scroll;
+      }
       body {
         font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
         background-color: #F9FAFB;
         color: #111827;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        margin: 0;
       }
       /* Ensure Pretendard is used everywhere */
       input, button, select, textarea {
         font-family: 'Pretendard', sans-serif !important;
       }
-      * {
-        transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        transition-duration: 150ms;
-      }
+      /* 흔들림의 원인이었던 전체 트랜지션 제거 */
       * {
         -webkit-tap-highlight-color: transparent;
+      }
+      /* 꼭 필요한 인터랙션에만 개별적으로 적용 */
+      .interactive-element {
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       }
     </style>
   <script type="importmap">

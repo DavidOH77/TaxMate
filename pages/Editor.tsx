@@ -1,195 +1,278 @@
-import React, { useState } from 'react';
+
+import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, ReceiptText } from 'lucide-react';
-import { InvoiceDraft, LineItem } from '../types';
-import { calculateTotals, formatCurrency, validateDraft } from '../utils/calculation';
+import { ArrowLeft, Plus, Trash2, Eye, Download, X, Calculator, Receipt, Search, History, ChevronRight, AlertCircle, Save, Check, FileText } from 'lucide-react';
+import { InvoiceDraft, LineItem, Party } from '../types';
+import { calculateTotals, formatCurrency, validateDraft, formatBizNo } from '../utils/calculation';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { TaxInvoiceForm } from '../components/TaxInvoiceForm';
+import html2canvas from 'https://esm.sh/html2canvas@1.4.1';
 
 interface EditorProps {
-  draft: InvoiceDraft | null;
+  draft: InvoiceDraft;
+  isNew: boolean;
   updateDraft: (draft: InvoiceDraft) => void;
+  deleteDraft: (id: string) => void;
+  allDrafts: InvoiceDraft[];
 }
 
-export const Editor: React.FC<EditorProps> = ({ draft, updateDraft }) => {
+export const Editor: React.FC<EditorProps> = ({ draft, isNew, updateDraft, deleteDraft, allDrafts }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'info' | 'items'>('info');
+  const [localDraft, setLocalDraft] = useState<InvoiceDraft>({ ...draft });
+  const [activeTab, setActiveTab] = useState<'items' | 'info'>('items');
+  const [showPreview, setShowPreview] = useState(false);
+  const [showBuyerHistory, setShowBuyerHistory] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  if (!draft) return null;
+  const uniqueBuyers = useMemo(() => {
+    const buyerMap = new Map<string, Party>();
+    allDrafts.forEach(d => {
+      if (d.buyer && d.buyer.name) {
+        const key = d.buyer.bizNo || d.buyer.name;
+        if (!buyerMap.has(key)) buyerMap.set(key, d.buyer);
+      }
+    });
+    return Array.from(buyerMap.values());
+  }, [allDrafts]);
 
   const handleBuyerChange = (field: string, value: string) => {
-    const updated = { ...draft, buyer: { ...draft.buyer, [field]: value } };
-    updateDraft(validateDraft(updated));
+    const updated = { ...localDraft, buyer: { ...localDraft.buyer, [field]: value } };
+    setLocalDraft(validateDraft(updated));
+  };
+
+  const selectPreviousBuyer = (prevBuyer: Party) => {
+    const updated = { ...localDraft, buyer: { ...prevBuyer } };
+    setLocalDraft(validateDraft(updated));
+    setShowBuyerHistory(false);
   };
 
   const handleItemChange = (itemId: string, field: keyof LineItem, value: any) => {
-    const updatedItems = draft.items.map(item => {
+    const updatedItems = localDraft.items.map(item => {
       if (item.id === itemId) {
         const newItem = { ...item, [field]: value };
         if (field === 'qty' || field === 'unitPrice') {
-          newItem.supplyAmount = (newItem.qty || 0) * (newItem.unitPrice || 0);
+          newItem.supplyAmount = Number(newItem.qty || 0) * Number(newItem.unitPrice || 0);
           newItem.vatAmount = Math.floor(newItem.supplyAmount * 0.1);
         }
         return newItem;
       }
       return item;
     });
-    
     const totals = calculateTotals(updatedItems);
-    updateDraft(validateDraft({ ...draft, items: updatedItems, ...totals }));
+    setLocalDraft(validateDraft({ ...localDraft, items: updatedItems, ...totals }));
   };
 
   const addItem = () => {
-    const newItem: LineItem = {
-      id: crypto.randomUUID(), name: '', spec: '', qty: 1, unitPrice: 0, supplyAmount: 0, vatAmount: 0
-    };
-    updateDraft(validateDraft({ ...draft, items: [...draft.items, newItem] }));
-    setActiveTab('items');
+    const newItem: LineItem = { id: crypto.randomUUID(), name: '', spec: '', qty: 1, unitPrice: 0, supplyAmount: 0, vatAmount: 0 };
+    setLocalDraft(validateDraft({ ...localDraft, items: [...localDraft.items, newItem] }));
+  };
+
+  const handleFinalSave = () => {
+    updateDraft(localDraft);
+    navigate('/');
+  };
+
+  const confirmDelete = () => {
+    deleteDraft(localDraft.id);
+    navigate('/');
+  };
+
+  const handleSaveImage = async () => {
+    const element = document.getElementById('tax-invoice-form');
+    if (!element) return;
+    try {
+      const canvas = await html2canvas(element, { scale: 3 });
+      const link = document.createElement('a');
+      link.download = `세금계산서_${localDraft.buyer.name || '미등록'}_${localDraft.issueDate}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      alert('이미지 저장 중 오류가 발생했습니다.');
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] pb-40">
-      {/* 상단 고정 헤더 */}
-      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-gray-100 px-6 py-6 flex items-center justify-between">
-        <button onClick={() => navigate('/')} className="p-2 -ml-3 text-gray-400 hover:text-gray-900 transition-colors">
-          <ArrowLeft size={28} />
-        </button>
+    <div className="min-h-screen bg-[#F9FAFB] pb-72 relative">
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100 px-6 py-6 flex items-center justify-between shadow-sm">
+        <button onClick={() => navigate('/')} className="p-2 -ml-3 text-gray-400 hover:text-gray-900 transition-colors"><ArrowLeft size={28} /></button>
         <div className="text-center">
-          <p className="text-[12px] font-black text-gray-400 tracking-widest mb-1">기록 수정하기</p>
-          <h1 className="font-black text-[16px] text-gray-900">{draft.buyer.name || '내역 상세'}</h1>
+          <p className="text-[10px] font-black text-blue-500 tracking-widest mb-0.5 uppercase">Invoice Editor</p>
+          <h1 className="font-black text-[16px] text-gray-900">{isNew ? '새 장부 작성' : (localDraft.buyer.name || '장부 수정')}</h1>
         </div>
         <div className="w-10" />
       </header>
 
-      <div className="max-w-xl mx-auto px-6 mt-8 space-y-10">
-        {/* 총액 요약 카드 - 가독성 및 여백 강화 */}
-        <Card className="bg-white border-2 border-blue-50 shadow-[0_12px_40px_rgba(0,0,0,0.06)] !p-10">
-          <div className="flex justify-between items-start mb-12">
-            <div className="space-y-3">
-              <p className="text-gray-500 text-[14px] font-black tracking-tight">최종 합계 금액</p>
-              <div className="flex items-center gap-3">
-                <span className="text-gray-900 text-2xl font-black">원</span>
+      <div className="px-6 mt-8 space-y-8">
+        <Card className="bg-white border-2 border-blue-100 shadow-xl shadow-blue-600/5 relative overflow-hidden">
+          <div className="relative z-10">
+            <div className="flex justify-between items-start mb-6">
+              <span className="text-[13px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-tighter">자동 합계 계산기</span>
+              <div className="flex flex-col items-end gap-1">
+                <select value={localDraft.billingType || '청구'} onChange={(e) => setLocalDraft(validateDraft({ ...localDraft, billingType: e.target.value as any }))} className="bg-gray-900 px-3 py-1.5 rounded-xl text-[12px] font-black text-white outline-none border-none cursor-pointer shadow-md">
+                  <option value="청구">청구 (돈 주세요)</option>
+                  <option value="영수">영수 (돈 받았습니다)</option>
+                </select>
               </div>
             </div>
-            <div className="bg-blue-600 px-5 py-2 rounded-2xl text-[12px] font-black text-white shadow-lg shadow-blue-500/20">
-              {draft.billingType || '청구'}
+            <div className="flex flex-col items-end mb-8">
+              <p className="text-gray-400 text-xs font-bold mb-1">총 합계 (공급가+세액)</p>
+              <h2 className="text-4xl font-black text-gray-900 tracking-tighter">{formatCurrency(localDraft.totalAmount)} <span className="text-lg text-gray-400">원</span></h2>
             </div>
-          </div>
-          
-          <div className="flex flex-col items-end mb-10">
-            <h2 className="text-5xl font-black text-blue-600 tracking-tighter">
-              {formatCurrency(draft.totalAmount)}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8 pt-8 border-t-2 border-gray-50">
-            <div className="space-y-1">
-              <p className="text-gray-400 text-[12px] font-bold">공급가액</p>
-              <p className="font-black text-[18px] text-gray-900">{formatCurrency(draft.totalSupplyAmount)}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-gray-400 text-[12px] font-bold">부가세</p>
-              <p className="font-black text-[18px] text-gray-900">{formatCurrency(draft.totalVatAmount)}</p>
+            <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gray-100">
+              <div><p className="text-[11px] font-bold text-gray-400 mb-1">공급가액</p><p className="font-black text-[16px] text-gray-900">{formatCurrency(localDraft.totalSupplyAmount)}</p></div>
+              <div><p className="text-[11px] font-bold text-gray-400 mb-1">세액 (10%)</p><p className="font-black text-[16px] text-blue-600">{formatCurrency(localDraft.totalVatAmount)}</p></div>
             </div>
           </div>
         </Card>
 
-        {/* 탭 전환 - 여백 확대 */}
-        <div className="flex p-2 bg-gray-200/60 rounded-3xl">
-          <button 
-            onClick={() => setActiveTab('info')}
-            className={`flex-1 py-4 text-[14px] font-black rounded-2xl transition-all ${activeTab === 'info' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-500'}`}
-          >
-            거래처 정보
-          </button>
-          <button 
-            onClick={() => setActiveTab('items')}
-            className={`flex-1 py-4 text-[14px] font-black rounded-2xl transition-all ${activeTab === 'items' ? 'bg-white text-gray-900 shadow-md' : 'text-gray-500'}`}
-          >
-            품목 리스트
-          </button>
+        <div className="flex p-1 bg-gray-200/50 rounded-2xl">
+          <button onClick={() => setActiveTab('items')} className={`flex-1 py-3 text-[14px] font-black rounded-xl transition-all ${activeTab === 'items' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>품목 및 금액 입력</button>
+          <button onClick={() => setActiveTab('info')} className={`flex-1 py-3 text-[14px] font-black rounded-xl transition-all ${activeTab === 'info' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>거래처 정보</button>
         </div>
 
-        {/* 탭별 내용 */}
-        {activeTab === 'info' ? (
+        {activeTab === 'items' ? (
           <div className="space-y-6">
-            <Card title="사업자 상세 정보" className="!p-8">
-              <div className="space-y-8">
-                <InputField label="사업자 등록 번호" value={draft.buyer.bizNo || ''} onChange={(v: string) => handleBuyerChange('bizNo', v)} placeholder="000-00-00000" />
-                <InputField label="상호 (업체명)" value={draft.buyer.name || ''} onChange={(v: string) => handleBuyerChange('name', v)} />
-                <InputField label="대표자 성명" value={draft.buyer.ceoName || ''} onChange={(v: string) => handleBuyerChange('ceoName', v)} />
-              </div>
-            </Card>
-            <Card title="날짜 및 기간" className="!p-8">
-               <InputField label="발행 일자" value={draft.issueDate || ''} onChange={(v: string) => updateDraft(validateDraft({ ...draft, issueDate: v }))} type="date" />
-            </Card>
+            {localDraft.items.map((item, idx) => (
+              <Card key={item.id} className="relative border-2 border-gray-50 hover:border-blue-100 transition-all">
+                <div className="flex justify-between items-center mb-6">
+                  <span className="text-[11px] font-black text-gray-400 bg-gray-50 px-2 py-1 rounded">No. {idx + 1}</span>
+                  <button onClick={() => setLocalDraft(validateDraft({ ...localDraft, items: localDraft.items.filter(i => i.id !== item.id) }))} className="p-2 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                </div>
+                <div className="space-y-6">
+                  <InputField label="품목명" value={item.name || ''} onChange={(v: string) => handleItemChange(item.id, 'name', v)} placeholder="예: 물품 대금" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <InputField label="수량" type="number" value={String(item.qty || '')} onChange={(v: string) => handleItemChange(item.id, 'qty', v)} />
+                    <InputField label="단가 (원)" type="number" value={String(item.unitPrice || '')} onChange={(v: string) => handleItemChange(item.id, 'unitPrice', v)} />
+                  </div>
+                  <div className="bg-blue-50/50 p-4 rounded-2xl flex justify-between items-center">
+                    <span className="text-[11px] font-black text-blue-400">품목 합계</span>
+                    <span className="font-black text-blue-600">{formatCurrency(item.supplyAmount)}원</span>
+                  </div>
+                </div>
+              </Card>
+            ))}
+            <button onClick={addItem} className="w-full py-8 border-2 border-dashed border-gray-200 rounded-[32px] text-gray-400 font-black hover:border-blue-500 hover:text-blue-500 transition-all flex flex-col items-center gap-2 bg-white shadow-sm">
+              <Plus size={24} /> 품목 추가
+            </button>
           </div>
         ) : (
           <div className="space-y-6">
-            {draftsItems(draft, handleItemChange, updateDraft)}
-            <button onClick={addItem} className="w-full py-12 border-4 border-dashed border-gray-100 rounded-[40px] text-gray-400 font-black text-[16px] hover:border-blue-100 hover:text-blue-500 transition-all flex flex-col items-center gap-4 bg-white shadow-sm">
-              <Plus size={32} />
-              여기를 눌러 품목 추가
+            <div className="flex justify-end px-1"><button onClick={() => setShowBuyerHistory(true)} className="flex items-center gap-1.5 text-[12px] font-black text-blue-600 bg-blue-50 px-4 py-2 rounded-xl active:scale-95 transition-all"><History size={14} /> 최근 거래처 불러오기</button></div>
+            <Card title="공급받는자 (거래처) 정보">
+              <div className="space-y-6">
+                <InputField label="상호 (업체명)" value={localDraft.buyer.name || ''} onChange={(v: string) => handleBuyerChange('name', v)} placeholder="예: 희망상사" />
+                <InputField label="사업자 등록 번호" value={localDraft.buyer.bizNo || ''} onChange={(v: string) => handleBuyerChange('bizNo', v)} placeholder="000-00-00000" />
+                <InputField label="대표자 성명" value={localDraft.buyer.ceoName || ''} onChange={(v: string) => handleBuyerChange('ceoName', v)} />
+                <InputField label="사업장 주소" value={localDraft.buyer.address || ''} onChange={(v: string) => handleBuyerChange('address', v)} />
+              </div>
+            </Card>
+            <Card title="발행 정보">
+               <InputField label="작성 일자" value={localDraft.issueDate || ''} onChange={(v: string) => setLocalDraft(validateDraft({ ...localDraft, issueDate: v }))} type="date" />
+            </Card>
+          </div>
+        )}
+
+        {/* 하단 삭제 섹션 (기존 삭제한 것과 동일하게 유지하되, 이탈 방지용으로 배치) */}
+        {!isNew && (
+          <div className="pt-10 pb-4 border-t border-gray-100 text-center space-y-4">
+            <div className="flex items-center justify-center gap-2 text-gray-300">
+              <AlertCircle size={14} />
+              <span className="text-[11px] font-bold">이 장부 내역이 더 이상 필요 없으신가요?</span>
+            </div>
+            <button 
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="px-8 py-3 rounded-2xl bg-white border-2 border-red-50 text-red-400 text-[13px] font-black flex items-center gap-2 mx-auto active:bg-red-50 transition-colors"
+            >
+              <Trash2 size={16} /> 이 장부 내역 삭제하기
             </button>
           </div>
         )}
       </div>
 
-      {/* 하단 저장 버튼 */}
-      <div className="fixed bottom-10 left-6 right-6 max-w-xl mx-auto z-30">
-        <Button fullWidth onClick={() => navigate('/')} className="h-20 rounded-[28px] text-[19px] font-black shadow-2xl shadow-blue-600/20 bg-blue-600 hover:bg-blue-700">
-          기록 저장 완료하기
-        </Button>
+      {/* 하단 고정 버튼 영역: 사장님들이 가장 잘 보이게 구성 */}
+      <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 flex flex-col gap-3 z-40 max-w-xl mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.05)] rounded-t-[40px]">
+        <button 
+          onClick={() => setShowPreview(true)} 
+          className="w-full h-14 bg-gray-100 text-gray-700 rounded-2xl font-black text-[15px] flex items-center justify-center gap-2 active:scale-95 transition-all"
+        >
+          <FileText size={18} className="text-gray-400" /> 종이 양식으로 미리보기
+        </button>
+        <button 
+          onClick={handleFinalSave} 
+          className="w-full h-18 bg-blue-600 text-white rounded-2xl font-black text-[18px] flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-blue-500/20 py-5"
+        >
+          <Check size={26} strokeWidth={3} /> 작성 완료 및 저장
+        </button>
       </div>
+
+      {/* 커스텀 삭제 확인 모달 */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="w-full max-w-xl bg-white rounded-t-[40px] p-10 animate-in slide-in-from-bottom duration-300 shadow-2xl text-center">
+            <div className="w-20 h-20 bg-red-50 text-red-500 rounded-[30px] flex items-center justify-center mx-auto mb-6">
+              <Trash2 size={40} />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 mb-3">정말 삭제하시겠습니까?</h3>
+            <p className="text-[15px] font-bold text-gray-500 leading-relaxed mb-10 italic">
+              지워진 장부는 다시 살릴 수 없습니다.<br/>
+              거래처와 금액을 다시 한번 확인해 주세요.
+            </p>
+            <div className="flex gap-4">
+              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 h-16 bg-gray-100 text-gray-500 rounded-2xl font-black text-[16px] active:scale-95 transition-all">취소</button>
+              <button onClick={confirmDelete} className="flex-[1.5] h-16 bg-red-500 text-white rounded-2xl font-black text-[16px] active:scale-95 transition-all shadow-lg shadow-red-500/20">네, 삭제하겠습니다</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 이전 거래처 목록 팝업 */}
+      {showBuyerHistory && (
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end justify-center">
+          <div className="w-full max-w-xl bg-white rounded-t-[40px] p-8 max-h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+            <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black text-gray-900">최근 거래처 선택</h3><button onClick={() => setShowBuyerHistory(false)} className="p-2 text-gray-400"><X size={24} /></button></div>
+            <div className="flex-1 overflow-auto space-y-3 pb-8">
+              {uniqueBuyers.length === 0 ? <div className="text-center py-20"><p className="text-gray-400 font-bold">아직 거래 내역이 없습니다.</p></div> : uniqueBuyers.map((buyer, idx) => (
+                <button key={idx} onClick={() => selectPreviousBuyer(buyer)} className="w-full p-6 rounded-3xl border-2 border-gray-50 bg-gray-50/50 hover:border-blue-500 hover:bg-blue-50/30 text-left flex items-center justify-between group transition-all">
+                  <div><p className="text-[16px] font-black text-gray-900 mb-1">{buyer.name}</p><p className="text-[12px] font-bold text-gray-400">{formatBizNo(buyer.bizNo)}</p></div>
+                  <ChevronRight size={20} className="text-gray-300 group-hover:text-blue-500" />
+                </button>
+              ))}
+            </div>
+            <Button fullWidth variant="secondary" onClick={() => setShowBuyerHistory(false)}>닫기</Button>
+          </div>
+        </div>
+      )}
+
+      {/* 미리보기 모달 */}
+      {showPreview && (
+        <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-4">
+          <div className="w-full max-w-4xl bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <div><h3 className="text-xl font-black text-gray-900">세금계산서 미리보기</h3><p className="text-[11px] font-bold text-gray-400 mt-0.5">국세청 표준 양식으로 자동 변환되었습니다.</p></div>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" onClick={handleSaveImage} className="gap-2 h-12 rounded-xl"><Download size={18} /> 이미지 저장</Button>
+                <button onClick={() => setShowPreview(false)} className="p-3 text-gray-300 hover:text-gray-900 transition-colors"><X size={28} /></button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto p-4 md:p-10 bg-gray-100/50"><div className="min-w-[800px] flex justify-center"><TaxInvoiceForm draft={localDraft} /></div></div>
+            <div className="p-6 bg-white border-t border-gray-100 text-center"><p className="text-xs font-bold text-gray-400 mb-4">저장된 이미지는 갤러리에서 확인할 수 있으며, 카톡으로 바로 전송 가능합니다.</p><Button fullWidth onClick={() => setShowPreview(false)} className="h-14">확인 후 닫기</Button></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-const draftsItems = (draft: any, handleItemChange: any, updateDraft: any) => (
-  draft.items.map((item: any, idx: number) => (
-    <Card key={item.id} className="relative group border-2 border-gray-50 !p-8">
-      <div className="flex justify-between items-center mb-8">
-        <span className="px-4 py-1.5 bg-blue-50 rounded-xl text-[12px] font-black text-blue-600">
-          {idx + 1}번째 품목
-        </span>
-        <button onClick={() => updateDraft(validateDraft({ ...draft, items: draft.items.filter((i: any) => i.id !== item.id) }))} className="p-2 text-gray-300 hover:text-red-500 transition-colors">
-          <Trash2 size={22} />
-        </button>
-      </div>
-      <div className="space-y-8">
-        <div className="relative">
-          <label className="block text-[12px] font-black text-gray-400 mb-3 ml-1">품목명</label>
-          <input 
-            className="w-full text-xl font-black text-gray-900 bg-transparent border-b-2 border-gray-100 focus:border-blue-600 outline-none pb-3 px-1"
-            placeholder="무엇을 팔았나요?"
-            value={item.name || ''}
-            onChange={(e) => handleItemChange(item.id, 'name', e.target.value)}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-[12px] font-black text-gray-400 mb-3 ml-1">수량</label>
-            <input type="number" className="w-full bg-gray-50 rounded-2xl px-5 py-5 text-lg font-black outline-none border-2 border-transparent focus:border-blue-100" value={item.qty || 0} onChange={(e) => handleItemChange(item.id, 'qty', Number(e.target.value))} />
-          </div>
-          <div>
-            <label className="block text-[12px] font-black text-gray-400 mb-3 ml-1">단가</label>
-            <input type="number" className="w-full bg-gray-50 rounded-2xl px-5 py-5 text-lg font-black outline-none border-2 border-transparent focus:border-blue-100" value={item.unitPrice || 0} onChange={(e) => handleItemChange(item.id, 'unitPrice', Number(e.target.value))} />
-          </div>
-        </div>
-      </div>
-    </Card>
-  ))
-);
-
 const InputField = ({ label, value, onChange, type = 'text', placeholder = '' }: any) => (
   <div className="group">
-    <label className="block text-[12px] font-black text-gray-400 uppercase tracking-wider mb-3 ml-1">{label}</label>
+    <label className="block text-[12px] font-black text-gray-400 uppercase tracking-tight mb-2 ml-1">{label}</label>
     <input 
-      type={type}
-      className="w-full bg-gray-50 rounded-2xl px-6 py-5 text-[17px] font-black text-gray-900 outline-none focus:ring-8 focus:ring-blue-600/5 focus:bg-white border-2 border-transparent focus:border-blue-600 transition-all"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
+      type={type} 
+      className="w-full bg-gray-50 rounded-2xl px-5 py-3.5 text-[15px] font-bold text-gray-900 outline-none focus:ring-4 focus:ring-blue-600/5 focus:bg-white border-2 border-transparent focus:border-blue-600 transition-all placeholder:text-gray-300" 
+      value={value} 
+      onChange={(e) => onChange(e.target.value)} 
+      placeholder={placeholder} 
     />
   </div>
 );

@@ -1,11 +1,11 @@
 import { InvoiceDraft, Party } from './types';
 
 export const MOCK_MY_INFO: Party = {
-  bizNo: '123-45-67890',
-  name: '대박상사',
-  ceoName: '김사장',
-  address: '서울시 강남구 테헤란로 123',
-  email: 'boss@daebak.com',
+  bizNo: '',
+  name: '',
+  ceoName: '',
+  address: '',
+  email: '',
 };
 
 export const EMPTY_DRAFT: InvoiceDraft = {
