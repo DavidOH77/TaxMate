@@ -48,11 +48,9 @@ export const Upload: React.FC<UploadProps> = ({ onSave, myInfo }) => {
       }
       
       const validated = validateDraft(draftData);
-      // NOTE: We don't call onSave(validated) here anymore to prevent auto-list-entry
-      // The Editor will handle final saving via onSave.
       navigate(`/draft/${validated.id}`, { state: { tempDraft: validated } });
     } catch (error) {
-      alert("문서를 분석하는 중 오류가 발생했습니다. 다시 시도해 주세요.");
+      alert("비서가 내용을 읽다가 조금 헷갈려 하네요. 다시 한 번만 선명하게 찍어주세요!");
     } finally {
       setLoading(false);
     }
@@ -73,17 +71,17 @@ export const Upload: React.FC<UploadProps> = ({ onSave, myInfo }) => {
               <Scan size={32} className="animate-bounce" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-gray-900 tracking-tight mb-2">세정 인공지능이<br/>정보를 읽고 있습니다</h1>
-              <p className="text-gray-400 text-sm font-bold">세금계산서용 데이터를 정제하는 중입니다.</p>
+              <h1 className="text-2xl font-black text-gray-900 tracking-tight mb-2">세정 비서가 꼼꼼하게<br/>내용을 읽고 있어요</h1>
+              <p className="text-gray-400 text-sm font-bold">장부에 예쁘게 적을 준비 중입니다.</p>
             </div>
           </div>
         ) : (
           <div className="w-full max-w-sm px-4">
             <h1 className="text-3xl font-black text-gray-900 tracking-tighter mb-4 leading-tight">
-              등록하실 종이 문서를<br/>찍어주세요.
+              종이 명세표를<br/>찍어만 주세요.
             </h1>
             <p className="text-gray-500 text-[15px] font-bold mb-14 leading-relaxed">
-              거래명세표나 영수증 사진을 올리면,<br/>AI가 세금계산서 장부로 자동 정리해 드립니다.
+              거래처명부터 합계 금액까지<br/>비서가 알아서 장부에 적어드립니다.
             </p>
             
             <label className="group relative block w-full aspect-square border-2 border-dashed border-gray-200 rounded-[40px] cursor-pointer hover:border-black hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-6 bg-gray-50/50 shadow-inner">
@@ -102,8 +100,8 @@ export const Upload: React.FC<UploadProps> = ({ onSave, myInfo }) => {
                 </div>
               </div>
               <div className="text-center px-4">
-                <span className="text-lg font-black text-gray-900 block">문서 촬영 및 사진 선택</span>
-                <span className="text-xs font-bold text-gray-400 mt-1 block">수기 명세표도 인식 가능합니다</span>
+                <span className="text-lg font-black text-gray-900 block">사진 찍기 / 앨범에서 선택</span>
+                <span className="text-xs font-bold text-gray-400 mt-1 block">휘갈겨 쓴 글씨도 잘 읽어요</span>
               </div>
             </label>
           </div>
@@ -112,7 +110,7 @@ export const Upload: React.FC<UploadProps> = ({ onSave, myInfo }) => {
 
       <footer className="mt-auto pt-10 flex items-center justify-center gap-2 text-gray-400">
         <ShieldCheck size={16} className="text-blue-500" />
-        <span className="text-xs font-extrabold tracking-tighter">세금계산서 전문 AI가 안전하게 분석합니다</span>
+        <span className="text-xs font-extrabold tracking-tighter">사장님 소중한 정보, 아무도 못 보게 꽉 잠가뒀어요</span>
       </footer>
     </div>
   );
